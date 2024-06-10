@@ -1,13 +1,14 @@
-const Product = require('../models/product');
+const Product = require("../models/product");
+const mongodb = require("mongodb");
 
 exports.getAddProduct = (req, res, next) => {
-  res.render('admin/edit-product', {
-    pageTitle: 'Add Product',
-    path: '/admin/add-product',
+  res.render("admin/edit-product", {
+    pageTitle: "Add Product",
+    path: "/admin/add-product",
     formsCSS: true,
     productCSS: true,
     activeAddProduct: true,
-    editing: false
+    editing: false,
   });
 };
 
@@ -16,24 +17,28 @@ exports.postAddProduct = (req, res, next) => {
   const imageUrl = req.body.imageUrl;
   const price = req.body.price;
   const description = req.body.description;
-  const product = new Product(null,title, imageUrl, description, price);
-  product.save();
-  res.redirect('/');
+  const product = new Product(title, price, description, imageUrl, null,req.user._id);
+  product
+    .save()
+    .then((result) => {
+      console.log(result);
+      res.redirect("/");
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 };
-exports.postEditProduct = (req, res, next) => {
-  const id = req.body.productId 
-  const title = req.body.title;
-  const imageUrl = req.body.imageUrl;
-  const price = req.body.price;
-  const description = req.body.description;
-  const product = new Product(id,title, imageUrl, description, price);
-  product.save();
-  res.redirect("/");
-};
+
 exports.postDeleteProduct = (req, res, next) => {
   const prodId = req.body.productId
-  Product.deleteById(prodId);
-  res.redirect("/products")
+  Product.deleteById(prodId)
+    .then((result) => {
+      console.log(result);
+      res.redirect("/products");
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 };
 
 exports.getEditProduct = (req, res, next) => {
@@ -42,8 +47,8 @@ exports.getEditProduct = (req, res, next) => {
   if(!editMode){
     res.redirect('/')
   }
-  Product.fetchById(prodId,(product)=> {
-    
+  Product.findById(prodId).then(product=> {
+
      res.render("admin/edit-product", {
        pageTitle: "Edit Product",
        path: "/admin/edit-product",
@@ -51,16 +56,40 @@ exports.getEditProduct = (req, res, next) => {
        product:product
      });
 
+  }).catch(err => {
+    console.log(err)
   })
- 
+
+};
+
+exports.postEditProduct = (req, res, next) => {
+  const id = req.body.productId
+  const title = req.body.title;
+  const imageUrl = req.body.imageUrl;
+  const price = req.body.price;
+  const description = req.body.description;
+  const product = new Product(title,price,description,imageUrl,mongodb.ObjectId.createFromHexString(id))
+  product.save()
+  .then(result => {
+    console.log(result);
+    res.redirect("/");
+
+  }).catch(err => {
+    console.log(err)
+  })
+
 };
 
 exports.getProducts = (req, res, next) => {
-  Product.fetchAll(products => {
-    res.render('admin/products', {
-      prods: products,
-      pageTitle: 'Admin Products',
-      path: '/admin/products'
+  Product.fetchAll()
+    .then((products) => {
+      res.render("admin/products", {
+        prods: products,
+        pageTitle: "Admin Products",
+        path: "/admin/products",
+      });
+    })
+    .catch((err) => {
+      console.log(err);
     });
-  });
 };
